@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100;700&display=swap');
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 100;
+}
+
+h2 {
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-weight: 200;
+}
+
+#map,
+.map {
+  background: rgb(2, 2, 2);
+  width: 100%;
+}
+
+#bar-chart {
+  width: 100%;
+  height: 380px;
+  margin: 10px auto;
+}
+
+#fullHeight #map {
+  height: 100%;
+}
+
+#fullHeight .map {
+  height: 100%;
+}
+
+.legend circle {
+  fill: none;
+  stroke: #ccc;
+}
+
+.legend text {
+  fill: #777;
+  font: 10px sans-serif;
+  text-anchor: middle;
+}
+
+#ui {
+  position: absolute;
+  right: 1em;
+  top: 1em;
+  z-index: 1100;
+}
+
+#by-state {
+  left: 1em;
+  top: 1em;
+  z-index: 1100;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 0.5em;
+  border-radius: 5px;
+}
+
+.tooltip {
+  background: #533b5c;
+  color: #b6b4b8;
+  font-family: 'Noto Sans JP' sans-serif;
+  font-size: 1em;
+  line-height: 1.5em;
+  padding: 10px 20px 4px 20px;
+}
+
+.leaflet-legend {
+  width: 240px;
+  height: 180px;
+  background-color: darkgray;
+  /* Legend is not shown on small screens. */
+  display: none;
+}
+
+/* Rule to toggle on/off legend. */
+.show-legend {
+  display: block;
+  margin-bottom: 10px;
+}
+
+/* Small devices (landscape phones, 576px and up) */
+@media (min-width: 576px) {
+        
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) {
+  aside {
+    display: block;
+  }
+  h1 {
+    font-size: 2.8em;
+  }
+}
+
+/* Large devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+}
+
+/* Extra large devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) {
+}
+
