@@ -1,12 +1,14 @@
-//initialize leaflet map
+/////////////////////////
+//     GLOBAL VARS     //
+/////////////////////////
+
 const map = L.map("map", {
     zoomSnap: 0.1,
     center: [34.0522, -118.2437],
     zoomControl: false,
-    //zoom: 8,
+    zoom: 8,
     minZoom: 6,
     maxZoom: 12,
-    //maxBounds: L.latLngBounds([34.22, -118.72], [33.76, -117.83]),
 });
 
 //get tiles
@@ -16,94 +18,189 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
     maxZoom: 20
 }).addTo(map);
 
+
+// GETTING DATA
+
+
 fetch("./data/CENSUS_2010_JOINED.geojson")
     // after it is returned...
     .then(function (response) {
-        //console.log(response);
-        return response.json();
+        // if has a property called ok, and it is true
+        if (response.ok) {
+            // The API call was successful!
+            // Parse the JSON into a useable format, then return it
+            return response.json();
+        } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
     })
+    // The returned response is now data in a new then method
     .then(function (data) {
-        //console.log(data);
-        // We now have the json file
+
         processData(data);
-    })
-    .catch(function (error) {
-        console.log(`Ruh roh! An error has occurred`, error);
     });
 
 
 
-
-
-
+// MAIN FUNCTION
 
 function processData(data) {
 
-    // empty array to store all the data values
-    const prices = [];
 
-    // iterate through all the counties
-    data.features.forEach(function (tract) {
+    let startInput = document.getElementById("start-input")
+    let endInput = document.getElementById("end-input")
+    let submitButton = document.getElementById("submit-input");
+    let keys = Object.keys(data.features[0].properties)
+    let homePriceYearsStr = []
 
-        // iterate through all the props of each county
-        for (const prop in tract.properties) {
-
-            // if the attribute is a number and not one of the fips codes or name
-            if (prop != "geoid10") {
-
-                // push that attribute value into the array
-                prices.push(Number(tract.properties[prop]));
-            }
+    keys.forEach(str => {
+        if (str.includes("home")) {
+            homePriceYearsStr.push(str)
         }
-    });
+    })
+    
+    drawBaseMap(data)
+    dropDownMenuElements(homePriceYearsStr, startInput)
+    dropDownMenuElements(homePriceYearsStr, endInput)
 
-    // verify the result!
-    //console.log(prices);
 
-    // create class breaks
-    const breaks = chroma.limits(prices, 'q', 5);
+    submitButton.addEventListener("click", () => {
+        let keys = Object.keys(data.features[0].properties)
+        let homePriceYearsStr = []
+        let storageForYearlyRates = {}
+        let homePriceKeysIndexed = {}
+        let counter = 0
 
-    // create color generator function
-    const colorize = chroma.scale(chroma.brewer.greens)
+        keys.forEach(str => {
+            if (str.includes("home")) {
+                homePriceYearsStr.push(str)
+            }
+        })
+
+        homePriceYearsStr.forEach(e => {
+            storageForYearlyRates[e] = []
+        })
+        
+        homePriceYearsStr.forEach(e => {
+            homePriceKeysIndexed[e] = counter
+            counter +=1
+        })
+        
+        let percentDifferenceData = calcPercentDifference(data, homePriceKeysIndexed)
+        let rates = getRates(percentDifferenceData)
+        let color = getColor(rates, 7)
+        let breaks = getBreaks(rates, 6, "yearDiff")
+
+        drawMap(percentDifferenceData, color, "yearDiff")
+        drawLegend(breaks, color)
+    })
+}
+
+
+
+// OTHER FUNCTIONS:
+
+
+
+// FUNCTIONS ANALYZING DATA:
+
+function calcPercentDifference(data, homePriceKeysIndexed) {
+    let start = document.getElementById("start-input").value
+    let end = document.getElementById("end-input").value
+    let startIndexValue = homePriceKeysIndexed[start]
+    let endIndexValue = homePriceKeysIndexed[end]
+    let features = data.features
+
+    if (start == end) {
+        alert("The two inputs are the same. Make sure they're different.")
+    } else {
+        features.forEach(e => {
+            let prop = e.properties
+            let year1 = +prop[start]
+            let year2 = +prop[end]
+
+            if (year1 == 0 || year2 == 0) {
+                prop["yearDiff"] = 0
+            } else {
+                if (startIndexValue < endIndexValue) {
+                    prop["yearDiff"] = +(((year2 - year1) / year1) * 100).toFixed(4)
+                } else {
+                    prop["yearDiff"] = +(((year2 - year1) / year1) * 100).toFixed(4)
+                }
+            }
+
+        })
+    }
+    return data
+}
+
+function getRates(DATA) {
+    let rates = []
+    let features = DATA.features
+    let key = "yearDiff"
+
+    features.forEach(e => {
+        let prop = e.properties
+        rates.push(prop["yearDiff"])
+    })
+    return rates
+}
+
+
+
+
+// COLOR RELATED FUNCTIONS:
+
+function getColor(rates, classBreaksNum) {
+    let breaks = chroma.limits(rates, 'e', classBreaksNum);
+    let colorize = chroma.scale(chroma.brewer.accent)
         .classes(breaks)
         .mode('lab');
-    //console.log(colorize)
-    drawMap(data, colorize)
-    drawLegend(colorize, breaks)
-} //end of processData
+    return colorize
+}
 
-function drawMap(data, colorize) {
+function getBreaks(rates, classBreaksNum) {
+    return chroma.limits(rates, 'e', classBreaksNum);
+}
 
-    // console.log(data)
 
-    // create Leaflet data layer and add to map
-    const tracts = L.geoJson(data, {
-        // style counties with initial default path options
+
+
+// MAP RELATED FUNCTIONS:
+
+function drawBaseMap(data) {
+    let startInput = document.getElementById("start-input")
+    let endInput = document.getElementById("end-input")
+
+    let tracts = L.geoJson(data, {
         style: function (feature) {
             return {
                 color: "#838283",
                 weight: 1,
                 fillOpacity: 1,
-                fillColor: "black",
+                fillColor: "white",
             };
         },
-        // add hover/touch functionality to each feature layer
         onEachFeature: function (feature, layer) {
-            // when mousing over a layer
+            let prop = feature.properties
+
+            let popup = `<h5>Census Tract: ${prop["geoid10"]}</h5> <br>
+                            <p>${startInput.value.replace("_", " ")}: ${prop[startInput.value]} <br>
+                            ${endInput.value.replace("_", " ")}: ${prop[endInput.value]}</p>`
+
+            layer.bindPopup(popup);
+
+
             layer.on("mouseover", function () {
-                // change the stroke color and bring that element to the front
                 layer
                     .setStyle({
-                        color: "#e3e0e0",
+                        color: "#e3e0e0"
                     })
                     .bringToFront();
             });
-
-            // on mousing off layer
             layer.on("mouseout", function () {
-                // reset the layer style to its original stroke color
                 layer.setStyle({
-                    color: "#838283",
+                    color: "#838283"
                 });
             });
         },
@@ -112,54 +209,63 @@ function drawMap(data, colorize) {
     map.fitBounds(tracts.getBounds(), {
         padding: [18, 18], // add padding around counties
     });
-    //console.log(data)
-    //createSliderUI(tracts, colorize)
-    updateMap(tracts, colorize, 'home_prices_YR1999')
+    return tracts
+}
 
-} //end drawMap
+function drawMap(data, color, Year) {
+    let tracts = drawBaseMap(data)
+    updateMap(tracts, color, Year)
+}
 
-function updateMap(tracts, colorize, year) {
-    tracts.eachLayer(function (layer) {
-        let props = layer.feature.properties
-        //console.log(props)
+function updateMap(dataLayer, color, year) {
+    let newMap = dataLayer.eachLayer(layer => {
+        let prop = layer.feature.properties
         layer.setStyle({
-            fillColor: colorize(Number(props[year]))
-        })
+            fillColor: color(Number(prop[year]))
+        });
+    }).addTo(map);
+}
 
 
-    })
 
-} // end updateMap()
 
-function drawLegend(colorize, breaks) {
-    // create a Leaflet control for the legend
-    const legendControl = L.control({
+// LEGEND FUNCTIONS:
+
+function generateLegend() {
+    let legendInfo = L.control({
         position: 'bottomleft'
     });
-    // when the control is added to the map
-    legendControl.onAdd = function (map) {
-
-        // create a new division element with class of 'legend' and return
-        const legend = L.DomUtil.create('div', 'legend');
+    legendInfo.onAdd = function (map) {
+        let legend = L.DomUtil.create('div', 'legend')
         return legend;
+    }
+    legendInfo.addTo(map);
+    return legendInfo
+}
 
-    };
+function removePreviousLegend() {
+    let collection = document.querySelectorAll('.legend');
+    for (let elem of collection) {
+        elem.remove();
+    }
+}
 
-    // add the legend control to the map
-    legendControl.addTo(map);
+function drawLegend(breaks, colorized) {
+    removePreviousLegend()
+    generateLegend()
 
     // select div and create legend title
-    const legend = document.querySelector('.legend')
-    legend.innerHTML = "<h3><span>2006</span> Unemployment Rates</h3><ul>";
+    let legend = document.querySelector('.legend')
+    legend.innerHTML = "<h3><span> Legend: </span>  </h3><ul>";
 
     // loop through the break values
     for (let i = 0; i < breaks.length - 1; i++) {
 
         // determine color value 
-        const color = colorize(breaks[i], breaks);
+        let color = colorized(breaks[i], breaks);
 
         // create legend item
-        const classRange = `<li><span style="background:${color}"></span>
+        let classRange = `<li><span style="background:${color}"></span>
       ${breaks[i].toLocaleString()}% &mdash;
       ${breaks[i + 1].toLocaleString()}% </li>`
 
@@ -168,43 +274,17 @@ function drawLegend(colorize, breaks) {
     }
     // close legend unordered list
     legend.innerHTML += "</ul>";
-} // end drawLegend()
+}
 
-function createSliderUI(tracts, colorize) {
-    // create Leaflet control for the slider
-    const sliderControl = L.control({
-        position: 'bottomright'
+
+
+
+// DROPDOWN FUNCTION:
+function dropDownMenuElements(data, input) {
+    data.forEach(e => {
+        let optionObj = document.createElement("option");
+        optionObj.textContent = e;
+        optionObj.value = e;
+        input.appendChild(optionObj);
     });
-    // when added to the map
-    sliderControl.onAdd = function (map) {
-
-        // select an existing DOM element with an id of "ui-controls"
-        const slider = L.DomUtil.get("ui-controls");
-
-        // disable scrolling of map while using controls
-        L.DomEvent.disableScrollPropagation(slider);
-
-        // disable click events while using controls
-        L.DomEvent.disableClickPropagation(slider);
-
-        // return the slider from the onAdd method
-        return slider;
-    }
-
-    // add the control to the map
-    sliderControl.addTo(map);
-    // select the form element
-    const slider = document.querySelector(".year-slider");
-
-    // listen for changes on input element
-    slider.addEventListener("input", function (e) {
-        // get the value of the selected option
-        const currentYear = e.target.value;
-        console.log(currentYear)
-        // update the map with current timestamp
-        updateMap(tracts, colorize, currentYear);
-        // update timestamp in legend heading
-        document.querySelector(".legend h3 span").innerHTML = currentYear;
-    });
-
-} // end createSliderUI()
+}

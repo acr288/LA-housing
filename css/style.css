@@ -10,23 +10,22 @@ h2 {
   font-weight: 200;
 }
 
+img {
+  position: absolute;
+  right:0;
+  bottom: 0;
+  margin-right: 5px;
+  margin-bottom: 5px;
+  border: solid black;
+}
+
 #map,
 .map {
   background: rgb(2, 2, 2);
   width: 100%;
 }
 
-#bar-chart {
-  width: 100%;
-  height: 380px;
-  margin: 10px auto;
-}
-
 #fullHeight #map {
-  height: 100%;
-}
-
-#fullHeight .map {
   height: 100%;
 }
 
@@ -37,30 +36,49 @@ h2 {
   color: whitesmoke;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
   border-radius: 5px;
-  width: 160px;
+  width: 190px;
 }
 
-#ui-controls {
-  width: 176px;
-  padding: 8px 25px 8px 15px;
-  background: rgba(75, 75, 75, 0.8);
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-  border-radius: 5px;
+.legend h3 {
+  font-size: 1.1em;
+  font-weight: bold;
+  line-height: 1em;
   color: whitesmoke;
+  margin: 0;
 }
 
-#ui-controls .min {
+.legend h3 span {
+  font-size: 1.3em;
+  margin: 0 20px 0 0;
+}
+
+.legend ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 30px 4px 0;
+  width: 215px;
+}
+
+.legend li {
+  list-style-type: none;
+  height: 22px;
+  width: 215px;
+}
+
+.legend span {
+  width: 30px;
+  height: 20px;
   float: left;
+  margin-right: 10px;
+}
+#ui {
+  position: absolute;
+  right: 1em;
+  top: 1em;
+  z-index: 1100;
 }
 
-#ui-controls .max {
-  float: right;
-  margin-right: -15px;
-}
 
-.year-slider {
-  width: 100%;
-}
 .tooltip {
   background: #533b5c;
   color: #b6b4b8;
@@ -70,19 +88,6 @@ h2 {
   padding: 10px 20px 4px 20px;
 }
 
-.leaflet-legend {
-  width: 240px;
-  height: 180px;
-  background-color: darkgray;
-  /* Legend is not shown on small screens. */
-  display: none;
-}
-
-/* Rule to toggle on/off legend. */
-.show-legend {
-  display: block;
-  margin-bottom: 10px;
-}
 
 /* Small devices (landscape phones, 576px and up) */
 @media (min-width: 576px) {
