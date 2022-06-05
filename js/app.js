@@ -1,7 +1,3 @@
-/////////////////////////
-//     GLOBAL VARS     //
-/////////////////////////
-
 const map = L.map("map", {
     zoomSnap: 0.1,
     center: [34.0522, -118.2437],
@@ -45,8 +41,6 @@ fetch("./data/CENSUS_2010_JOINED.geojson")
 // MAIN FUNCTION
 
 function processData(data) {
-
-
     let startInput = document.getElementById("start-input")
     let endInput = document.getElementById("end-input")
     let submitButton = document.getElementById("submit-input");
@@ -67,18 +61,14 @@ function processData(data) {
     submitButton.addEventListener("click", () => {
         let keys = Object.keys(data.features[0].properties)
         let homePriceYearsStr = []
-        let storageForYearlyRates = {}
         let homePriceKeysIndexed = {}
+        let classBreaks = 7
         let counter = 0
 
         keys.forEach(str => {
             if (str.includes("home")) {
                 homePriceYearsStr.push(str)
             }
-        })
-
-        homePriceYearsStr.forEach(e => {
-            storageForYearlyRates[e] = []
         })
         
         homePriceYearsStr.forEach(e => {
@@ -88,8 +78,8 @@ function processData(data) {
         
         let percentDifferenceData = calcPercentDifference(data, homePriceKeysIndexed)
         let rates = getRates(percentDifferenceData)
-        let color = getColor(rates, 7)
-        let breaks = getBreaks(rates, 6, "yearDiff")
+        let color = getColor(rates, classBreaks)
+        let breaks = getBreaks(rates, classBreaks, "yearDiff")
 
         drawMap(percentDifferenceData, color, "yearDiff")
         drawLegend(breaks, color)
@@ -111,8 +101,8 @@ function calcPercentDifference(data, homePriceKeysIndexed) {
     let endIndexValue = homePriceKeysIndexed[end]
     let features = data.features
 
-    if (start == end) {
-        alert("The two inputs are the same. Make sure they're different.")
+    if( (start == end) || startIndexValue > endIndexValue) {
+        alert("The two inputs are either the same or the first is greater than the second. Make sure the first input is less than the second.")
     } else {
         features.forEach(e => {
             let prop = e.properties
@@ -121,14 +111,9 @@ function calcPercentDifference(data, homePriceKeysIndexed) {
 
             if (year1 == 0 || year2 == 0) {
                 prop["yearDiff"] = 0
-            } else {
-                if (startIndexValue < endIndexValue) {
-                    prop["yearDiff"] = +(((year2 - year1) / year1) * 100).toFixed(4)
-                } else {
-                    prop["yearDiff"] = +(((year2 - year1) / year1) * 100).toFixed(4)
-                }
+            } else { // 1999: 0 20003:1 0 < 1 ; 1 > 0
+                prop["yearDiff"] = +(((year2 - year1) / year1) * 100).toFixed(4)
             }
-
         })
     }
     return data
@@ -153,9 +138,10 @@ function getRates(DATA) {
 
 function getColor(rates, classBreaksNum) {
     let breaks = chroma.limits(rates, 'e', classBreaksNum);
-    let colorize = chroma.scale(chroma.brewer.accent)
+    let colorize = chroma.scale(chroma.brewer.PuOr)
         .classes(breaks)
         .mode('lab');
+    console.log(chroma.brewer) //locate colorschemes
     return colorize
 }
 
@@ -178,7 +164,7 @@ function drawBaseMap(data) {
                 color: "#838283",
                 weight: 1,
                 fillOpacity: 1,
-                fillColor: "white",
+                fillColor: "black",
             };
         },
         onEachFeature: function (feature, layer) {

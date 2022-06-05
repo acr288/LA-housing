@@ -8,16 +8,8 @@ body {
 h2 {
   font-family: Georgia, 'Times New Roman', Times, serif;
   font-weight: 200;
-}
-
-img {
-  position: absolute;
-  right:0;
-  bottom: 0;
-  margin-right: 5px;
-  margin-bottom: 5px;
-  border: solid black;
-}
+  color: #b6b4b8;
+  }
 
 #map,
 .map {
