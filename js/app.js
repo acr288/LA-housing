@@ -52,7 +52,7 @@ function processData(data) {
             homePriceYearsStr.push(str)
         }
     })
-    
+
     drawBaseMap(data)
     dropDownMenuElements(homePriceYearsStr, startInput)
     dropDownMenuElements(homePriceYearsStr, endInput)
@@ -62,7 +62,7 @@ function processData(data) {
         let keys = Object.keys(data.features[0].properties)
         let homePriceYearsStr = []
         let homePriceKeysIndexed = {}
-        let classBreaks = 7
+        let classBreaks = 10
         let counter = 0
 
         keys.forEach(str => {
@@ -70,12 +70,12 @@ function processData(data) {
                 homePriceYearsStr.push(str)
             }
         })
-        
+
         homePriceYearsStr.forEach(e => {
             homePriceKeysIndexed[e] = counter
-            counter +=1
+            counter += 1
         })
-        
+
         let percentDifferenceData = calcPercentDifference(data, homePriceKeysIndexed)
         let rates = getRates(percentDifferenceData)
         let color = getColor(rates, classBreaks)
@@ -101,7 +101,7 @@ function calcPercentDifference(data, homePriceKeysIndexed) {
     let endIndexValue = homePriceKeysIndexed[end]
     let features = data.features
 
-    if( (start == end) || startIndexValue > endIndexValue) {
+    if ((start == end) || startIndexValue > endIndexValue) {
         alert("The two inputs are either the same or the first is greater than the second. Make sure the first input is less than the second.")
     } else {
         features.forEach(e => {
@@ -110,8 +110,10 @@ function calcPercentDifference(data, homePriceKeysIndexed) {
             let year2 = +prop[end]
 
             if (year1 == 0 || year2 == 0) {
-                prop["yearDiff"] = 0
-            } else { // 1999: 0 20003:1 0 < 1 ; 1 > 0
+                prop["yearDiff"] = null
+            } else if ((year1 == null || year2 == null)) {
+                prop["yearDiff"] = null
+            } else { 
                 prop["yearDiff"] = +(((year2 - year1) / year1) * 100).toFixed(4)
             }
         })
@@ -137,16 +139,15 @@ function getRates(DATA) {
 // COLOR RELATED FUNCTIONS:
 
 function getColor(rates, classBreaksNum) {
-    let breaks = chroma.limits(rates, 'e', classBreaksNum);
+    let breaks = chroma.limits(rates, 'k', classBreaksNum); //switched to K-means
     let colorize = chroma.scale(chroma.brewer.PuOr)
         .classes(breaks)
         .mode('lab');
-    console.log(chroma.brewer) //locate colorschemes
     return colorize
 }
 
 function getBreaks(rates, classBreaksNum) {
-    return chroma.limits(rates, 'e', classBreaksNum);
+    return chroma.limits(rates, 'k', classBreaksNum); //switched to K-means
 }
 
 
@@ -155,9 +156,6 @@ function getBreaks(rates, classBreaksNum) {
 // MAP RELATED FUNCTIONS:
 
 function drawBaseMap(data) {
-    let startInput = document.getElementById("start-input")
-    let endInput = document.getElementById("end-input")
-
     let tracts = L.geoJson(data, {
         style: function (feature) {
             return {
@@ -168,15 +166,6 @@ function drawBaseMap(data) {
             };
         },
         onEachFeature: function (feature, layer) {
-            let prop = feature.properties
-
-            let popup = `<h5>Census Tract: ${prop["geoid10"]}</h5> <br>
-                            <p>${startInput.value.replace("_", " ")}: ${prop[startInput.value]} <br>
-                            ${endInput.value.replace("_", " ")}: ${prop[endInput.value]}</p>`
-
-            layer.bindPopup(popup);
-
-
             layer.on("mouseover", function () {
                 layer
                     .setStyle({
@@ -204,11 +193,31 @@ function drawMap(data, color, Year) {
 }
 
 function updateMap(dataLayer, color, year) {
+    
+
+
     let newMap = dataLayer.eachLayer(layer => {
+        let startInput = document.getElementById("start-input")
+        let endInput = document.getElementById("end-input")
         let prop = layer.feature.properties
-        layer.setStyle({
-            fillColor: color(Number(prop[year]))
-        });
+
+        if (prop[year]) {
+            layer.setStyle({
+                fillColor: color(Number(prop[year]))
+            })
+
+            let popup = `<h5>Census Tract: ${prop["geoid10"]}</h5> <br>
+                    <p>${startInput.value.replace("_", " ")}: ${prop[startInput.value]} <br>
+                    ${endInput.value.replace("_", " ")}: ${prop[endInput.value]} <br>
+                    Percent Difference: ${prop[year].toFixed(4)}%</p>`
+            layer.bindPopup(popup);
+
+
+        } else {
+            layer.setStyle({
+                fillColor: "FF0000FF"
+            })
+        }
     }).addTo(map);
 }
 
