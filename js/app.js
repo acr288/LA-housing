@@ -78,8 +78,9 @@ function processData(data) {
 
         let percentDifferenceData = calcPercentDifference(data, homePriceKeysIndexed)
         let rates = getRates(percentDifferenceData)
-        let color = getColor(rates, classBreaks)
-        let breaks = getBreaks(rates, classBreaks, "yearDiff")
+        const functions = getColor(rates, classBreaks)
+        let color = functions[0]
+        let breaks = functions[1]
 
         console.log(breaks, rates, percentDifferenceData)
 
@@ -160,9 +161,10 @@ function getColor(rates, classBreaksNum) {
     let colorize = chroma.scale(chroma.brewer.PuOr)
         .classes(newBreaks)
         .mode('lab');
-    return colorize
+    return [colorize, newBreaks]
 }
 
+// This is only used in the legend. Fold into function above.
 function getBreaks(rates, classBreaksNum) {
     // return chroma.limits(rates, 'q', classBreaksNum); //switched to K-means
     return ss.ckmeans(rates, classBreaksNum).map(e => {
