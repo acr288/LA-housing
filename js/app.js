@@ -78,8 +78,11 @@ function processData(data) {
 
         let percentDifferenceData = calcPercentDifference(data, homePriceKeysIndexed)
         let rates = getRates(percentDifferenceData)
-        let color = getColor(rates, classBreaks)
-        let breaks = getBreaks(rates, classBreaks, "yearDiff")
+        const functions = getColor(rates, classBreaks)
+        let color = functions[0]
+        let breaks = functions[1]
+
+        console.log(breaks, rates, percentDifferenceData)
 
         drawMap(percentDifferenceData, color, "yearDiff")
         drawLegend(breaks, color)
@@ -115,6 +118,7 @@ function calcPercentDifference(data, homePriceKeysIndexed) {
                 prop["yearDiff"] = null
             } else { 
                 prop["yearDiff"] = +(((year2 - year1) / year1) * 100).toFixed(4)
+                console.log(prop["yearDiff"])
             }
         })
     }
@@ -128,8 +132,16 @@ function getRates(DATA) {
 
     features.forEach(e => {
         let prop = e.properties
-        rates.push(prop["yearDiff"])
+
+        // use only values that are not null
+        if (prop["yearDiff"]) {
+            rates.push(prop["yearDiff"])
+        }
+        
     })
+
+    // verify that there are no null values
+    console.log(rates)
     return rates
 }
 
@@ -139,15 +151,25 @@ function getRates(DATA) {
 // COLOR RELATED FUNCTIONS:
 
 function getColor(rates, classBreaksNum) {
-    let breaks = chroma.limits(rates, 'k', classBreaksNum); //switched to K-means
+
+    // Use simple stats to calculate the breaks
+    const newBreaks = ss.ckmeans(rates, classBreaksNum).map(e => {
+        // get the first element of the array from chroma js color scale
+        return e[0]
+    })
+    // let breaks = chroma.limits(rates, 'q', classBreaksNum); //switched to K-means
     let colorize = chroma.scale(chroma.brewer.PuOr)
-        .classes(breaks)
+        .classes(newBreaks)
         .mode('lab');
-    return colorize
+    return [colorize, newBreaks]
 }
 
+// This is only used in the legend. Fold into function above.
 function getBreaks(rates, classBreaksNum) {
-    return chroma.limits(rates, 'k', classBreaksNum); //switched to K-means
+    // return chroma.limits(rates, 'q', classBreaksNum); //switched to K-means
+    return ss.ckmeans(rates, classBreaksNum).map(e => {
+        return e[0]
+    })
 }
 
 
@@ -160,7 +182,7 @@ function drawBaseMap(data) {
         style: function (feature) {
             return {
                 color: "#838283",
-                weight: 1,
+                weight: 0.2,
                 fillOpacity: 1,
                 fillColor: "black",
             };
@@ -182,6 +204,7 @@ function drawBaseMap(data) {
     }).addTo(map);
     // fit the map's bounds and zoom level using the counties extent
     map.fitBounds(tracts.getBounds(), {
+        animate: false,
         padding: [18, 18], // add padding around counties
     });
     return tracts
