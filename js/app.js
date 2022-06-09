@@ -182,7 +182,7 @@ function drawBaseMap(data) {
         style: function (feature) {
             return {
                 color: "#838283",
-                weight: 0,
+                weight: 0.2,
                 fillOpacity: 1,
                 fillColor: "black",
             };
@@ -204,6 +204,7 @@ function drawBaseMap(data) {
     }).addTo(map);
     // fit the map's bounds and zoom level using the counties extent
     map.fitBounds(tracts.getBounds(), {
+        animate: false,
         padding: [18, 18], // add padding around counties
     });
     return tracts
