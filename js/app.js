@@ -41,6 +41,19 @@ fetch("./data/CENSUS_2010_JOINED.geojson")
 // MAIN FUNCTION
 
 function processData(data) {
+    const conversionTextObj = {
+        "home_prices_YR1999": "1999",
+        "home_prices_YR2003": "2003",
+        "home_prices_YR2005": "2005",
+        "home_prices_YR2008q3": "2008 q3",
+        "home_prices_YR2010q4": "2010 q4",
+        "home_prices_YR2012q2": "2012 q2",
+        "home_prices_YR2013q3": "2013 q3",
+        "home_prices_YR2013q4": "2013 q4",
+        "home_prices_YR2018Q1": "2018 q1",
+        "home_prices_YR2018Q4": "2018 q4",
+    }
+
     let startInput = document.getElementById("start-input")
     let endInput = document.getElementById("end-input")
     let submitButton = document.getElementById("submit-input");
@@ -54,15 +67,27 @@ function processData(data) {
     })
 
     drawBaseMap(data)
-    dropDownMenuElements(homePriceYearsStr, startInput)
-    dropDownMenuElements(homePriceYearsStr, endInput)
+    dropDownMenuElements(homePriceYearsStr, startInput, conversionTextObj)
+    dropDownMenuElements(homePriceYearsStr, endInput, conversionTextObj)
 
 
     submitButton.addEventListener("click", () => {
+        const conversionTextObj2 = {
+            "home_prices_YR1999": "1999",
+            "home_prices_YR2003": "2003",
+            "home_prices_YR2005": "2005",
+            "home_prices_YR2008q3": "2008 q3",
+            "home_prices_YR2010q4": "2010 q4",
+            "home_prices_YR2012q2": "2012 q2",
+            "home_prices_YR2013q3": "2013 q3",
+            "home_prices_YR2013q4": "2013 q4",
+            "home_prices_YR2018Q1": "2018 q1",
+            "home_prices_YR2018Q4": "2018 q4",
+        }
         let keys = Object.keys(data.features[0].properties)
         let homePriceYearsStr = []
         let homePriceKeysIndexed = {}
-        let classBreaks = 10
+        let classBreaks = 7
         let counter = 0
 
         keys.forEach(str => {
@@ -82,9 +107,8 @@ function processData(data) {
         let color = functions[0]
         let breaks = functions[1]
 
-        console.log(breaks, rates, percentDifferenceData)
 
-        drawMap(percentDifferenceData, color, "yearDiff")
+        drawMap(percentDifferenceData, color, "yearDiff", conversionTextObj2)
         drawLegend(breaks, color)
     })
 }
@@ -141,7 +165,6 @@ function getRates(DATA) {
     })
 
     // verify that there are no null values
-    console.log(rates)
     return rates
 }
 
@@ -181,7 +204,7 @@ function drawBaseMap(data) {
     let tracts = L.geoJson(data, {
         style: function (feature) {
             return {
-                color: "#838283",
+                color: "white",
                 weight: 0.2,
                 fillOpacity: 1,
                 fillColor: "black",
@@ -210,12 +233,12 @@ function drawBaseMap(data) {
     return tracts
 }
 
-function drawMap(data, color, Year) {
+function drawMap(data, color, Year, conversionTextObj2) {
     let tracts = drawBaseMap(data)
-    updateMap(tracts, color, Year)
+    updateMap(tracts, color, Year, conversionTextObj2)
 }
 
-function updateMap(dataLayer, color, year) {
+function updateMap(dataLayer, color, year, conversionTextObj2) {
     
 
 
@@ -230,8 +253,8 @@ function updateMap(dataLayer, color, year) {
             })
 
             let popup = `<h5>Census Tract: ${prop["geoid10"]}</h5> <br>
-                    <p>${startInput.value.replace("_", " ")}: ${prop[startInput.value]} <br>
-                    ${endInput.value.replace("_", " ")}: ${prop[endInput.value]} <br>
+                    <p>${conversionTextObj2[startInput.value]}: $${prop[startInput.value]} <br>
+                    ${conversionTextObj2[endInput.value]}: $${prop[endInput.value]} <br>
                     Percent Difference: ${prop[year].toFixed(4)}%</p>`
             layer.bindPopup(popup);
 
@@ -298,10 +321,10 @@ function drawLegend(breaks, colorized) {
 
 
 // DROPDOWN FUNCTION:
-function dropDownMenuElements(data, input) {
+function dropDownMenuElements(data, input,conversionTextKey) {
     data.forEach(e => {
         let optionObj = document.createElement("option");
-        optionObj.textContent = e;
+        optionObj.textContent = conversionTextKey[e];
         optionObj.value = e;
         input.appendChild(optionObj);
     });
