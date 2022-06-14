@@ -227,14 +227,14 @@ function drawBaseMap(data) {
             if (isSpecifiedTract(tractNumber)) {
                 return {
                     color: "red",
-                    weight: 1,
+                    weight: 1.5,
                     fillOpacity: 1,
                     fillColor: "black",
                 };
             } else {
                 return {
                     color: "white",
-                    weight: 0.2,
+                    weight: 0.34,
                     fillOpacity: 1,
                     fillColor: "black",
                 };
@@ -253,7 +253,7 @@ function drawBaseMap(data) {
                         .bringToFront();
                 } else {
                     layer.setStyle({
-                            color: "#e3e0e0"
+                            color: "grey"
                         })
                         .bringToFront();
                 }
@@ -267,7 +267,7 @@ function drawBaseMap(data) {
                 } else {
 
                     layer.setStyle({
-                        color: "#838283"
+                        color: "white"
                     });
                 }
             });
