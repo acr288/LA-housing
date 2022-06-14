@@ -54,9 +54,14 @@ function processData(data) {
         "home_prices_YR2018Q4": "2018 q4",
     }
 
+    let inglewoodText = document.getElementById("tract1")
+    let siliconBeach = document.getElementById("tract2")
+    let eastLA = document.getElementById("tract3")
+    let storyTracts = [inglewoodText, siliconBeach, eastLA]
+
     let startInput = document.getElementById("start-input")
     let endInput = document.getElementById("end-input")
-    let submitButton = document.getElementById("submit-input");
+    let submitButton = document.getElementById("submit-input")
     let keys = Object.keys(data.features[0].properties)
     let homePriceYearsStr = []
 
@@ -70,6 +75,12 @@ function processData(data) {
     dropDownMenuElements(homePriceYearsStr, startInput, conversionTextObj)
     dropDownMenuElements(homePriceYearsStr, endInput, conversionTextObj)
 
+
+    storyTracts.forEach(e => {
+        e.addEventListener("click", () => {
+            zoomToTract(e)
+        })
+    })
 
     submitButton.addEventListener("click", () => {
         const conversionTextObj2 = {
@@ -103,9 +114,8 @@ function processData(data) {
 
         let percentDifferenceData = calcPercentDifference(data, homePriceKeysIndexed)
         let rates = getRates(percentDifferenceData)
-        const functions = getColor(rates, classBreaks)
-        let color = functions[0]
-        let breaks = functions[1]
+        let color = getColor(rates, classBreaks)
+        let breaks = getBreaks(rates, classBreaks)
 
 
         drawMap(percentDifferenceData, color, "yearDiff", conversionTextObj2)
@@ -140,9 +150,8 @@ function calcPercentDifference(data, homePriceKeysIndexed) {
                 prop["yearDiff"] = null
             } else if ((year1 == null || year2 == null)) {
                 prop["yearDiff"] = null
-            } else { 
+            } else {
                 prop["yearDiff"] = +(((year2 - year1) / year1) * 100).toFixed(4)
-                console.log(prop["yearDiff"])
             }
         })
     }
@@ -161,10 +170,9 @@ function getRates(DATA) {
         if (prop["yearDiff"]) {
             rates.push(prop["yearDiff"])
         }
-        
+
     })
 
-    // verify that there are no null values
     return rates
 }
 
@@ -173,55 +181,95 @@ function getRates(DATA) {
 
 // COLOR RELATED FUNCTIONS:
 
-function getColor(rates, classBreaksNum) {
-
-    // Use simple stats to calculate the breaks
-    const newBreaks = ss.ckmeans(rates, classBreaksNum).map(e => {
-        // get the first element of the array from chroma js color scale
-        return e[0]
-    })
-    // let breaks = chroma.limits(rates, 'q', classBreaksNum); //switched to K-means
-    let colorize = chroma.scale(chroma.brewer.PuOr)
-        .classes(newBreaks)
-        .mode('lab');
-    return [colorize, newBreaks]
-}
-
-// This is only used in the legend. Fold into function above.
 function getBreaks(rates, classBreaksNum) {
-    // return chroma.limits(rates, 'q', classBreaksNum); //switched to K-means
     return ss.ckmeans(rates, classBreaksNum).map(e => {
         return e[0]
     })
 }
 
-
-
+function getColor(rates, classBreaksNum) {
+    const breaks = getBreaks(rates, classBreaksNum)
+    let colorize = chroma.scale(chroma.brewer.PuOr)
+        .classes(breaks)
+        .mode('lab');
+    return colorize
+}
 
 // MAP RELATED FUNCTIONS:
+
+function isSpecifiedTract(tractNumber) {
+    if (tractNumber == "06037601001" || tractNumber == "06037273200" || tractNumber == "06037204300") {
+        return true
+    } else {
+        return false
+    }
+
+}
+
+function zoomToTract(tract) {
+    let textContent = tract.textContent
+
+    if (textContent == "Inglewood") {
+        map.setView([33.961018, -118.355370], 15)
+    } else if (textContent == "Silicon Beach") {
+        map.setView([33.9764002, -118.4667452], 15)
+    } else {
+        map.setView([34.034, -118.205], 15)
+    }
+}
+
 
 function drawBaseMap(data) {
     let tracts = L.geoJson(data, {
         style: function (feature) {
-            return {
-                color: "white",
-                weight: 0.2,
-                fillOpacity: 1,
-                fillColor: "black",
-            };
+            let prop = feature.properties
+            let tractNumber = prop.geoid10
+            if (isSpecifiedTract(tractNumber)) {
+                return {
+                    color: "red",
+                    weight: 1,
+                    fillOpacity: 1,
+                    fillColor: "black",
+                };
+            } else {
+                return {
+                    color: "white",
+                    weight: 0.2,
+                    fillOpacity: 1,
+                    fillColor: "black",
+                };
+            }
         },
-        onEachFeature: function (feature, layer) {
+        onEachFeature: function (feature, layer) { // ACHTUNG: fix color for specific tracts
+            let prop = feature.properties
+            let tractNumber = prop.geoid10
+
             layer.on("mouseover", function () {
-                layer
-                    .setStyle({
-                        color: "#e3e0e0"
-                    })
-                    .bringToFront();
+
+                if (isSpecifiedTract(tractNumber)) {
+                    layer.setStyle({
+                            color: "orange"
+                        })
+                        .bringToFront();
+                } else {
+                    layer.setStyle({
+                            color: "#e3e0e0"
+                        })
+                        .bringToFront();
+                }
             });
             layer.on("mouseout", function () {
-                layer.setStyle({
-                    color: "#838283"
-                });
+                if (isSpecifiedTract(tractNumber)) {
+                    layer.setStyle({
+                            color: "red"
+                        })
+                        .bringToFront();
+                } else {
+
+                    layer.setStyle({
+                        color: "#838283"
+                    });
+                }
             });
         },
     }).addTo(map);
@@ -239,25 +287,30 @@ function drawMap(data, color, Year, conversionTextObj2) {
 }
 
 function updateMap(dataLayer, color, year, conversionTextObj2) {
-    
-
-
     let newMap = dataLayer.eachLayer(layer => {
         let startInput = document.getElementById("start-input")
         let endInput = document.getElementById("end-input")
         let prop = layer.feature.properties
+        let censusTract = prop.geoid10
 
         if (prop[year]) {
-            layer.setStyle({
-                fillColor: color(Number(prop[year]))
-            })
+            if (isSpecifiedTract(censusTract)) {
+                layer.setStyle({
+                    fillColor: color(Number(prop[year])),
+                    color: "red",
+                    weight: 3.3,
+                })
+            } else {
+                layer.setStyle({
+                    fillColor: color(Number(prop[year]))
+                })
+            }
 
             let popup = `<h5>Census Tract: ${prop["geoid10"]}</h5> <br>
                     <p>${conversionTextObj2[startInput.value]}: $${prop[startInput.value]} <br>
                     ${conversionTextObj2[endInput.value]}: $${prop[endInput.value]} <br>
                     Percent Difference: ${prop[year].toFixed(4)}%</p>`
             layer.bindPopup(popup);
-
 
         } else {
             layer.setStyle({
@@ -321,7 +374,7 @@ function drawLegend(breaks, colorized) {
 
 
 // DROPDOWN FUNCTION:
-function dropDownMenuElements(data, input,conversionTextKey) {
+function dropDownMenuElements(data, input, conversionTextKey) {
     data.forEach(e => {
         let optionObj = document.createElement("option");
         optionObj.textContent = conversionTextKey[e];
