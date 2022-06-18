@@ -1,4 +1,5 @@
 #LA housing price change 1999-2018
+https://acr288.github.io/LA-housing/
 ##About the project
 The project "20 years of housing price change in Los Angeles" shows median housing prices by census tract for Los Angeles County, for select years/quarters between 1999-2018, in a form of a chloropleth map. The focus of the project is to show percent change in home prices between select years (for example from 1999-2018, or 2003-2018), with a focus on three neighborhoods of high price growth. Using the dropdown menu the user selects first and second years for comparison. A side bar profiles the three neighborhoods and the associated changes. Clicking on a cesus tract with data summons a popup that displays median prices for years one and two, and the percent change, as well as the census tract number.
 ##Background
@@ -9,3 +10,5 @@ The raw data is median home prices for Los Angeles County by census tract for se
 The data were joined using QGIS
 ##Technology
 MS Excel, QGIS 3.16.6, VSCode, Leaflet, Github Pages, Github Desktop, OpenStreetMap tiles
+###See my portfolio
+https://acr288.github.io/
